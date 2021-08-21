@@ -1,3 +1,10 @@
+/**
+ * COLOR.H
+ * 
+ * This file contains escape sequences for the colors and the header color set functon.
+ * 
+ * EPSILON0, 20.08.2021
+ */
 
 // Enum for color scheme
 enum colorSchemeEnum {
@@ -6,7 +13,7 @@ enum colorSchemeEnum {
     colorMono
 };
 
-// Colors
+// Color escape sequences for xterm and monokai scheme
 #define mn_CC  "\x1b[0m"                   // Clear
 #define mn_CW  "\x1b[38;2;248;248;242m"    // White
 #define mn_CG  "\x1b[38;2;117;113;94m"     // Grey 
@@ -17,10 +24,9 @@ enum colorSchemeEnum {
 #define mn_CGR "\x1b[38;2;166;242;46m"     // Green 
 #define mn_CBL "\x1b[38;2;102;235;239m"    // Blue
 #define mn_CR  "\x1b[38;2;249;38;114m"     // Red
-
 #define x_CC  "\x1b[0m"                    // Clear
 #define x_CW  "\x1b[0m"                    // White
-#define x_CG  "\x1b[32m"                   // Grey 
+#define x_CG  "\x1b[0m"                    // Grey 
 #define x_CB  "\x1b[30m"                   // Black
 #define x_CY  "\x1b[33m"                   // Yellow
 #define x_CO  "\x1b[35m"                   // Orange 
@@ -29,8 +35,6 @@ enum colorSchemeEnum {
 #define x_CBL "\x1b[34m"                   // Blue
 #define x_CR  "\x1b[31m"                   // Red
 
+// Function
 void setColorScheme(void);
-void colorSetMono(void);
-void colorSetXterm(void);
-void colorSetMonokai(void);
 

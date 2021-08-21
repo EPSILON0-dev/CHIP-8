@@ -26,34 +26,43 @@ cp ./bin/chip8 /usr/bin
 ```
 
 # Usage
-```shell
-# Just run the code
-chip8 [filename] 
+```
+    Usage:
+        chip8 [-vsmxcfbk] filename
 
-# Run in verbose mode
-chip8 -v [filename]
-
-# Run step by step in verbose mode
-chip8 -s -v [filename]
-
-# Run in verbose mode with kill address,
-#  kill address must be specifiet in decimal format.
-chip8 -v -k [kill_address] [filename]
+    Arguments:
+        -h          - Show this help
+        -v          - Run in verbose mode
+        -s          - Run step by step (use space to advance)
+        -c value    - Cycles per frame (default: 8)
+        -w          - Hide warnings
+        -n          - Flip controls
+        -x          - Use 8bit color scheme for messages
+        -m          - Use monochrome for messages
+        -f color    - Set foreground color (HTML format without #)
+        -b color    - Set background color (HTML format without #)
+        -k address  - Kill address (decimal value)
+    
+    Examples:
+        chip8 test.hex
+        chip8 -c 8 -n -f ffffff -b 000000 test.hex
+        chip8 -s -v -k 1024 test.hex
 ```
 
 # Controls
 Everything is binded to left side of the keyboard, so you can use this emulator even of small 60% keyboards.
 ```
 ,---,---,---,---,---,---,---,---,---,---,---,---,---,-------,
-|   | 7 | 8 | 9 | A |   |   |   |   |   |   |   |   |       |
+|   |1/7|2/8|3/9| A |   |   |   |   |   |   |   |   |       |
 |---'-,-'-,-'-,-'-,-'-,-'-,-'-,-'-,-'-,-'-,-'-,-'-,-'-,-----|
 |     | 4 | 5 | 6 | B |   |   |   |   |   |   |   |   |     |
 |-----',--',--',--',--',--',--',--',--',--',--',--',--'-----|
-|      | 1 | 2 | 3 | C |   |   |   |   |   |   |   |        |
+|      |7/1|8/2|9/3| C |   |   |   |   |   |   |   |        |
 |------'-,-'-,-'-,-'-,-'-,-'-,-'-,-'-,-'-,-'-,-'-,-'--------|
 |        | F | 0 | E | D |   |   |   |   |   |   |          |
 |----,---',--'--,'---'---'---'---'---'---'-,-'--,'---,------|
 |    |    |     |                          |    |    |      |
 '----'----'-----'--------------------------'----'----'------'
+             X/Y - (X - normal), (Y - flipped)
 ```
 2, 4, 6 and 8 are often used as arrow keys

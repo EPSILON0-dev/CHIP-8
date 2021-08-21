@@ -24,9 +24,9 @@ extern unsigned char screenData[];
 extern sf::VertexArray screenArray;
 extern sf::Color foreground;
 extern sf::Color background;
-extern std::string CC, CW, CG, CB, CY, CO, CLO, CGR, CBL, CR;
 
-// Add some colors to the boring error codes
+// Terminal logs color
+extern std::string CC, CW, CG, CB, CY, CO, CLO, CGR, CBL, CR;
 #define ERROR '[' << CR << "ERROR" << CC << "]:"
 #define WARNING '[' << CY << "WARNING" << CC << "]:"
 

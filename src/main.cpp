@@ -17,35 +17,38 @@
 #include "util.h"
 #include "color.h"
 
+// Classes
 sf::RenderWindow window(sf::VideoMode(640, 320), "CHIP-8");
 Interpreter interpreter;
 
+// External variables
 extern sf::VertexArray screenArray;
-
 extern bool verbose;
 extern bool stepByStep;
 extern unsigned cyclesPerFrame;
 extern unsigned killAddress;
-extern std::string CC, CW, CG, CB, CY, CO, CLO, CGR, CBL, CR;
 
-#define INFO '[' << CG << "INFO" << CC << "]:"
+// Terminal colors
+extern std::string CC, CW, CG, CB, CY, CO, CLO, CGR, CBL, CR;
+#define INFO '[' << CGR << "INFO" << CC << "]:"
 #define ERROR '[' << CR << "ERROR" << CC << "]:"
 #define WARNING '[' << CY << "WARNING" << CC << "]:"
 
+// Delay between instructions in step by step mode
 unsigned prevPressed = 0;
 
 int main(int argc, char** argv)
 {
+    // Check if file specified
     if (argc < 2) {
         std::cout << ERROR << " Missing argument\n";
-        std::cout << INFO << " Usage: chip8 [-v] [-k kill address (dec)] filename\n";
+        std::cout << INFO << " Use: \"chip8 -h\" for help\n";
         return 1;
     }
 
     // Parse arguments
     if (parse_arguments(argc, argv) == -1) {
-        std::cout << ERROR << " Critical error, exiting...\n";
-        return 1;  
+        return 0;  
     }
 
     // Set color scheme
@@ -58,7 +61,7 @@ int main(int argc, char** argv)
     if (interpreter.readProgram(argv[argc - 1]))
         return 1;
 
-    // Prin waiting for start message
+    // Print start message
     bool started = 0;
     if (stepByStep) {
         std::cout << "Press [space] to execute a instruction\n";

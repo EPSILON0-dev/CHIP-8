@@ -25,9 +25,10 @@ extern unsigned colorScheme;
 extern Interpreter interpreter;
 extern sf::Color foreground;
 extern sf::Color background;
-extern std::string CC, CW, CG, CB, CY, CO, CLO, CGR, CBL, CR;
 
-#define INFO '[' << CG << "INFO" << CC << "]:"
+// Color 
+extern std::string CC, CW, CG, CB, CY, CO, CLO, CGR, CBL, CR;
+#define INFO '[' << CGR << "INFO" << CC << "]:"
 #define ERROR '[' << CR << "ERROR" << CC << "]:"
 #define WARNING '[' << CY << "WARNING" << CC << "]:"
 
@@ -38,6 +39,29 @@ static unsigned char getHex(char hex);
 // Static variables
 static bool foregroundChange = 0;
 static bool backgroundChange = 0;
+
+// Help message
+#define help \
+"    Usage:\n\
+        chip8 [-vsmxcfbk] filename\n\
+\n\
+    Arguments:\n\
+        -h          - Show this help\n\
+        -v          - Run in verbose mode\n\
+        -s          - Run step by step (use space to advance)\n\
+        -c value    - Cycles per frame (default: 8)\n\
+        -w          - Hide warnings\n\
+        -n          - Flip controls\n\
+        -x          - Use 8bit color scheme for messages\n\
+        -m          - Use monochrome for messages\n\
+        -f color    - Set foreground color (HTML format without #)\n\
+        -b color    - Set background color (HTML format without #)\n\
+        -k address  - Kill address (decimal value)\n\
+    \n\
+    Examples:\n\
+        chip8 test.hex\n\
+        chip8 -c 8 -n -f ffffff -b 000000 test.hex\n\
+        chip8 -s -v -k 1024 test.hex"
 
 /**
  * @brief This function changes a hex character into a value
@@ -65,11 +89,16 @@ static unsigned char getHex(char hex)
  */
 int parse_arguments(int argc, char** argv) {
     // Check all arguments
-    for (int i = 1; i < argc-1; i++) {
-        std::string arg = argv[i];   
+    for (int i = 1; i < argc; i++) {
+        std::string arg = argv[i];  
+         
+        // Check for help
+        if (arg[0] == '-' && arg[1] == 'h' && arg[2] == '\0') {
+            std::cout << help << '\n';
+            return -1;
 
         // Check for verbose flag
-        if (arg[0] == '-' && arg[1] == 'v' && arg[2] == '\0') {
+        } else if (arg[0] == '-' && arg[1] == 'v' && arg[2] == '\0') {
             verbose = 1;
 
         // Check for stepByStep flag
@@ -154,8 +183,10 @@ int parse_arguments(int argc, char** argv) {
                 return -1;
             }
         } else {
-            std::cout << ERROR << " Unknown argument: " << arg << '\n';
-            return -1;
+            if (arg[0] == '-') {
+                std::cout << ERROR << " Unknown argument: " << arg << '\n';
+                return -1;
+            }
         }
     }
 
