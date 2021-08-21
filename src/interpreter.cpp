@@ -27,9 +27,9 @@ extern sf::VertexArray screenArray;
 
 // Key bindings
 sf::Keyboard::Key keysLUT[] = {
-    sf::Keyboard::Key::X, sf::Keyboard::Key::Num1, sf::Keyboard::Key::Num2, sf::Keyboard::Key::Num3,
-    sf::Keyboard::Key::Q, sf::Keyboard::Key::W, sf::Keyboard::Key::E, sf::Keyboard::Key::A,
-    sf::Keyboard::Key::S, sf::Keyboard::Key::D, sf::Keyboard::Key::Num4, sf::Keyboard::Key::R,
+    sf::Keyboard::Key::X, sf::Keyboard::Key::A, sf::Keyboard::Key::S, sf::Keyboard::Key::D,
+    sf::Keyboard::Key::Q, sf::Keyboard::Key::W, sf::Keyboard::Key::E, sf::Keyboard::Key::Num1,
+    sf::Keyboard::Key::Num2, sf::Keyboard::Key::Num3, sf::Keyboard::Key::Num4, sf::Keyboard::Key::R,
     sf::Keyboard::Key::F, sf::Keyboard::Key::V, sf::Keyboard::Key::C, sf::Keyboard::Key::Z
 };
 
