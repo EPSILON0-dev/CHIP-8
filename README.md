@@ -42,7 +42,7 @@ chip8 -v -k [kill_address] [filename]
 ```
 
 # Controls
-Everything is binded to left side of the keyboard, so you can use this emulator even of small 60% keyboards.\
+Everything is binded to left side of the keyboard, so you can use this emulator even of small 60% keyboards.
 ```
 ,---,---,---,---,---,---,---,---,---,---,---,---,---,-------,
 |   | 1 | 2 | 3 | A |   |   |   |   |   |   |   |   |       |
