@@ -16,17 +16,28 @@
 using namespace std;
 
 // External variables
+extern bool hideWarnings;
+extern bool flipControls;
 extern sf::RenderWindow window;
 extern sf::VertexArray screen;
 extern unsigned char screenData[];
 extern sf::VertexArray screenArray;
+extern sf::Color foreground;
+extern sf::Color background;
+extern std::string CC, CW, CG, CB, CY, CO, CLO, CGR, CBL, CR;
 
 // Add some colors to the boring error codes
-#define ERROR "[\x1b[38;2;249;38;114mERROR\x1b[0m]:"
-#define WARNING "[\x1b[38;2;230;159;102mWARNING\x1b[0m]:"
+#define ERROR '[' << CR << "ERROR" << CC << "]:"
+#define WARNING '[' << CY << "WARNING" << CC << "]:"
 
 // Key bindings
 sf::Keyboard::Key keysLUT[] = {
+    sf::Keyboard::Key::X, sf::Keyboard::Key::Num1, sf::Keyboard::Key::Num2, sf::Keyboard::Key::Num3,
+    sf::Keyboard::Key::Q, sf::Keyboard::Key::W, sf::Keyboard::Key::E, sf::Keyboard::Key::A,
+    sf::Keyboard::Key::S, sf::Keyboard::Key::D, sf::Keyboard::Key::Num4, sf::Keyboard::Key::R,
+    sf::Keyboard::Key::F, sf::Keyboard::Key::V, sf::Keyboard::Key::C, sf::Keyboard::Key::Z
+};
+sf::Keyboard::Key keysLUTflipped[] = {
     sf::Keyboard::Key::X, sf::Keyboard::Key::A, sf::Keyboard::Key::S, sf::Keyboard::Key::D,
     sf::Keyboard::Key::Q, sf::Keyboard::Key::W, sf::Keyboard::Key::E, sf::Keyboard::Key::Num1,
     sf::Keyboard::Key::Num2, sf::Keyboard::Key::Num3, sf::Keyboard::Key::Num4, sf::Keyboard::Key::R,
@@ -77,10 +88,16 @@ Interpreter::Interpreter(void)
  * @brief This function reads a program from a file
  * 
  */
-void Interpreter::readProgram(char* filename)
+int Interpreter::readProgram(char* filename)
 {
-    // Load the program
+    // Open a file
     std::ifstream program(filename);
+    if (program.fail()) {
+        cout << ERROR << " File does not exist\n";
+        return -1;
+    }
+
+    // Load the program
     program.read((char*)(memoryArray + 512), 3584);
 
     // Load a small "Bootloader"
@@ -92,6 +109,10 @@ void Interpreter::readProgram(char* filename)
     // Load the character set
     for (unsigned i = 0; i < 80; i++) 
         memoryArray[0x1B0 + i] = characters[i];
+
+    // Close a file
+    program.close();
+    return 0;
 }
 
 /**
@@ -146,7 +167,7 @@ void Interpreter::handleMathOpcode(void)
             break;
 
         default:
-            cout << WARNING << " Invalid misc opcode: " << uppercase << hex << opcode << "h, skipping\n";
+            if (!hideWarnings) cout << WARNING << " Invalid misc opcode: " << uppercase << hex << opcode << "h, skipping\n";
             break;
     }
 }
@@ -163,7 +184,7 @@ void Interpreter::handleMiscOpcode(void)
 
     // Check for index register overflow
     if (I > 0xFFF) {
-        cout << WARNING << " Index register out of range: " << uppercase << hex << I << "h\n";
+        if (!hideWarnings) cout << WARNING << " Index register out of range: " << uppercase << hex << I << "h\n";
         I &= 0xFFF;
     }
 
@@ -174,7 +195,7 @@ void Interpreter::handleMiscOpcode(void)
 
         case 0x0A: // Wait for the key
             for (unsigned i = 0; i < 16; i++) {
-                if (sf::Keyboard::isKeyPressed(keysLUT[i])) {
+                if (sf::Keyboard::isKeyPressed(((flipControls)? keysLUTflipped : keysLUT)[i])) {
                     gotKey = 1;
                     V[reg] = i;
                 }
@@ -201,7 +222,7 @@ void Interpreter::handleMiscOpcode(void)
 
         case 0x33: // Set BCD
             if (I > 0xFFD) {
-                cout << WARNING << " Unable to complete BCD call, I to high: " << uppercase << hex << I << "h\n";
+                if (!hideWarnings) cout << WARNING << " Unable to complete BCD call, I to high: " << uppercase << hex << I << "h\n";
                 I = 0xFFD;
             }
             memoryArray[I+0] = V[reg] / 100;
@@ -211,7 +232,7 @@ void Interpreter::handleMiscOpcode(void)
 
         case 0x55: // Dump registers to memory
             if (I > 0xFFF - reg) {
-                cout << WARNING << " Unable to complete register dump, I to high: " << uppercase << hex << I << "h\n";
+                if (!hideWarnings) cout << WARNING << " Unable to complete register dump, I to high: " << uppercase << hex << I << "h\n";
                 I = 0xFFF - reg;
             }
             for (unsigned i = 0; i <= reg; i++)
@@ -220,7 +241,7 @@ void Interpreter::handleMiscOpcode(void)
 
         case 0x65: // Read memory to registers
             if (I > 0xFFF - reg) {
-                cout << WARNING << " Unable to complete memory read, I to high: " << uppercase << hex << I << "h\n";
+                if (!hideWarnings) cout << WARNING << " Unable to complete memory read, I to high: " << uppercase << hex << I << "h\n";
                 I = 0xFFF - reg;
             }
             for (unsigned i = 0; i <= reg; i++)
@@ -245,11 +266,11 @@ void Interpreter::drawSprite(void)
 
     // Check if coordinates are inside of the screen space
     if (X > 63) {
-        cout << WARNING << " Sprite X too high: " << uppercase << hex << X << "h\n";
+        if (!hideWarnings) cout << WARNING << " Sprite X too high: " << uppercase << hex << X << "h\n";
         X = 63;
     }
     if (Y > 31) {
-        cout << WARNING << " Sprite X too high: " << uppercase << hex << Y << "h\n";
+        if (!hideWarnings) cout << WARNING << " Sprite X too high: " << uppercase << hex << Y << "h\n";
         Y = 31;
     }
 
@@ -261,7 +282,7 @@ void Interpreter::drawSprite(void)
                 // If we unset anything set colision flag
                 if (!(screenData[(Y + y) * 64 + X + x])) V[0xF] = 1;
                 // Set the color
-                sf::Color color = (screenData[(Y + y) * 64 + X + x]) ? sf::Color::White : sf::Color::Black;
+                sf::Color color = (screenData[(Y + y) * 64 + X + x]) ? foreground : background;
                 screenArray[((Y + y) * 64 + X + x) * 4 + 0].color = color;
                 screenArray[((Y + y) * 64 + X + x) * 4 + 1].color = color;
                 screenArray[((Y + y) * 64 + X + x) * 4 + 2].color = color;
@@ -309,12 +330,12 @@ int Interpreter::Update(void)
                     screenData[i] = 0;
             } else if (opcode == 0xEE) {
                 if (SP == 0) {
-                    cout << ERROR << " Call stack underflow at address: " << uppercase << hex << PC-2 << "h\n";
+                    if (!hideWarnings) cout << ERROR << " Call stack underflow at address: " << uppercase << hex << PC-2 << "h\n";
                     return -1;
                 }
                 PC = callStack[--SP];
             } else {
-                cout << WARNING << " Machine code call at address: " << uppercase << hex << PC-2 << "h, skipping...\n";
+                if (!hideWarnings) cout << WARNING << " Machine code call at address: " << uppercase << hex << PC-2 << "h, skipping...\n";
             }
             break;
         
@@ -324,7 +345,7 @@ int Interpreter::Update(void)
 
         case 0x2000: // Call a subroutine
             if (SP == 11) {
-                std::cout << ERROR << " Call stack overflow on memory address " << uppercase << hex << PC-2 << "h\n";
+                if (!hideWarnings) std::cout << ERROR << " Call stack overflow on memory address " << uppercase << hex << PC-2 << "h\n";
                 return -1;
             }
             callStack[SP++] = PC;
@@ -343,7 +364,7 @@ int Interpreter::Update(void)
 
         case 0x5000: // Skip if equal
             if (opcode & 0xF) {
-                cout << WARNING << " Invalid skip opcode: " << uppercase << hex << opcode << "h\n";
+                if (!hideWarnings) cout << WARNING << " Invalid skip opcode: " << uppercase << hex << opcode << "h\n";
             }
             if (V[(opcode >> 8) & 0xF] == V[(opcode >> 4) & 0xF])
                 PC += 2;
@@ -363,7 +384,7 @@ int Interpreter::Update(void)
 
         case 0x9000: // Skip if not equal
             if (opcode & 0xF) {
-                cout << WARNING << " Invalid skip opcode: " << uppercase << hex << opcode << "h\n";
+                if (!hideWarnings) cout << WARNING << " Invalid skip opcode: " << uppercase << hex << opcode << "h\n";
             }
             if (V[(opcode >> 8) & 0xF] != V[(opcode >> 4) & 0xF])
                 PC += 2;
@@ -387,15 +408,15 @@ int Interpreter::Update(void)
 
         case 0xE000: // Keyboard instructions
             if ((opcode & 0xFF) == 0x9E) { // Key equal to register
-                if (sf::Keyboard::isKeyPressed(keysLUT[V[(opcode >> 8) & 0xF] & 0xF])) {
+                if (sf::Keyboard::isKeyPressed(((flipControls)? keysLUTflipped : keysLUT)[V[(opcode >> 8) & 0xF] & 0xF])) {
                     PC += 2;
                 }
             } else if ((opcode & 0xFF) == 0xA1) { // Key equal to register
-                if (!(sf::Keyboard::isKeyPressed(keysLUT[V[(opcode >> 8) & 0xF] & 0xF]))) {
+                if (!(sf::Keyboard::isKeyPressed(((flipControls)? keysLUTflipped : keysLUT)[V[(opcode >> 8) & 0xF] & 0xF]))) {
                     PC += 2;
                 }
             } else {
-                cout << WARNING << " Invalid keyboard opcode: " << uppercase << hex << opcode << "h\n";
+                if (!hideWarnings) cout << WARNING << " Invalid keyboard opcode: " << uppercase << hex << opcode << "h\n";
             }
             break;
 

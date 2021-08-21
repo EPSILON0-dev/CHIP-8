@@ -12,6 +12,8 @@
 
 unsigned char screenData[2048];
 sf::VertexArray screenArray(sf::Quads, 8192);
+sf::Color foreground = sf::Color::White;
+sf::Color background = sf::Color::Black;
 
 /**
  * @brief This generates vertex cordinates for each pixel
@@ -24,7 +26,7 @@ void generateScreenArray(void) {
             screenArray[(i * 64 + j) * 4 + 1].position = sf::Vector2f(j * 10.0f + 10.0f, i * 10.0f);
             screenArray[(i * 64 + j) * 4 + 2].position = sf::Vector2f(j * 10.0f + 10.0f, i * 10.0f + 10.0f);
             screenArray[(i * 64 + j) * 4 + 3].position = sf::Vector2f(j * 10.0f,         i * 10.0f + 10.0f);
-            sf::Color color = (rand()%2) ? sf::Color::White : sf::Color::Black;
+            sf::Color color = (rand()%2) ? foreground : background;
             screenArray[(i * 64 + j) * 4 + 0].color = color;
             screenArray[(i * 64 + j) * 4 + 1].color = color;
             screenArray[(i * 64 + j) * 4 + 2].color = color;

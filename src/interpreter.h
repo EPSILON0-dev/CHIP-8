@@ -41,7 +41,7 @@ private:
     
 // Public functions
 public:
-    void readProgram(char* filename); 
+    int readProgram(char* filename); 
     int Update(void);
     void timerUpdate(void);
 };

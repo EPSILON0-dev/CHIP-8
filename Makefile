@@ -14,7 +14,7 @@ TESTDIR    = test
 
 CFLAGS    :=-O2 -Wall -Wextra
 LFLAGS    :=-lsfml-graphics -lsfml-system -lsfml-window
-OBJ       := $(OBJDIR)/interpreter.o $(OBJDIR)/main.o $(OBJDIR)/screen.o $(OBJDIR)/util.o
+OBJ       := $(OBJDIR)/interpreter.o $(OBJDIR)/main.o $(OBJDIR)/screen.o $(OBJDIR)/util.o $(OBJDIR)/color.o
 DIRS      := $(OBJDIR) $(BINDIR) $(LOGDIR)
 
 .PHONEY: all

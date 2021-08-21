@@ -15,40 +15,56 @@
 #include "interpreter.h"
 #include "screen.h"
 #include "util.h"
+#include "color.h"
 
 sf::RenderWindow window(sf::VideoMode(640, 320), "CHIP-8");
 Interpreter interpreter;
 
 extern sf::VertexArray screenArray;
 
-bool verbose = 0;
-bool stepByStep = 0;
+extern bool verbose;
+extern bool stepByStep;
+extern unsigned cyclesPerFrame;
+extern unsigned killAddress;
+extern std::string CC, CW, CG, CB, CY, CO, CLO, CGR, CBL, CR;
+
+#define INFO '[' << CG << "INFO" << CC << "]:"
+#define ERROR '[' << CR << "ERROR" << CC << "]:"
+#define WARNING '[' << CY << "WARNING" << CC << "]:"
+
 unsigned prevPressed = 0;
-unsigned killAddress = 0x10000;
 
 int main(int argc, char** argv)
 {
     if (argc < 2) {
-        std::cout << "[\x1b[38;2;249;38;114mERROR\x1b[0m]: Missing argument\n";
-        std::cout << "[\x1b[38;2;166;242;46mINFO\x1b[0m]: Usage: chip8 [-v] [-k kill address (dec)] filename\n";
+        std::cout << ERROR << " Missing argument\n";
+        std::cout << INFO << " Usage: chip8 [-v] [-k kill address (dec)] filename\n";
         return 1;
     }
 
+    // Parse arguments
+    if (parse_arguments(argc, argv) == -1) {
+        std::cout << ERROR << " Critical error, exiting...\n";
+        return 1;  
+    }
+
+    // Set color scheme
+    setColorScheme();
+
+    // Generate screen array 
     generateScreenArray();
 
+    // Initialize the interpreter
+    if (interpreter.readProgram(argv[argc - 1]))
+        return 1;
+
+    // Prin waiting for start message
     bool started = 0;
     if (stepByStep) {
         std::cout << "Press [space] to execute a instruction\n";
     } else {
         std::cout << "Press [space] to start execution...\n";
     }
-
-    // Parse arguments
-    if (parse_arguments(argc, argv) == -1)
-        return 1;  
-
-    // Initialize the interpreter
-    interpreter.readProgram(argv[argc - 1]);
 
     // Enable 60 fps vsync
     window.setVerticalSyncEnabled(1);
@@ -79,16 +95,16 @@ int main(int argc, char** argv)
             // Normal execution
             if (!stepByStep) {
                 // Execute 8 instruction per frame (480Hz)
-                for (unsigned i = 0; i < 8; i++) {
+                for (unsigned i = 0; i < cyclesPerFrame; i++) {
                     // Check kill address
                     if (interpreter.PC == killAddress) {
-                        std::cout << "[\x1b[38;2;166;242;46mINFO\x1b[0m]: Kill address reached, exiting...\n";
+                        std::cout << INFO << " Kill address reached, exiting...\n";
                         return 0;
                     }
 
                     // Execute and check for errors
                     if(interpreter.Update() == -1) {
-                        std::cout << "[\x1b[38;2;249;38;114mERROR\x1b[0m]: Critical error, exiting...\n";
+                        std::cout << ERROR << " Critical error, exiting...\n";
                         return 1;
                     }
 
@@ -104,13 +120,13 @@ int main(int argc, char** argv)
                     if (!prevPressed) {
                         // Check kill address
                         if (interpreter.PC == killAddress) {
-                            std::cout << "[\x1b[38;2;166;242;46mINFO\x1b[0m]: Kill address reached, exiting...\n";
+                            std::cout << INFO << " Kill address reached, exiting...\n";
                             return 0;
                         }
 
                         // Execute and check for errors
                         if(interpreter.Update() == -1) {
-                            std::cout << "[\x1b[38;2;249;38;114mERROR\x1b[0m]: Critical error, exiting...\n";
+                            std::cout << ERROR << " Critical error, exiting...\n";
                             return 1;
                         }
 

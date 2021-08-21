@@ -6,31 +6,54 @@
  * EPSILON0, 20.08.2021
  */
 
+#include <SFML/Graphics.hpp>
 #include <iomanip>
 #include <iostream>
 #include "interpreter.h"
 #include "util.h"
 
+// Variables
+bool verbose = 0;
+bool flipControls = 0;
+bool stepByStep = 0;
+bool hideWarnings = 0;
+unsigned killAddress = 0x10000;
+unsigned cyclesPerFrame = 8;
+
 // External variables
-extern bool verbose;
-extern bool stepByStep;
-extern unsigned killAddress;
+extern unsigned colorScheme;
 extern Interpreter interpreter;
+extern sf::Color foreground;
+extern sf::Color background;
+extern std::string CC, CW, CG, CB, CY, CO, CLO, CGR, CBL, CR;
 
-// Colors
-#define CC  "\x1b[0m"                   // Clear
-#define CW  "\x1b[38;2;248;248;242m"    // White
-#define CG  "\x1b[38;2;117;113;94m"     // Grey 
-#define CB  "\x1b[38;2;39;40;34m"       // Black
-#define CY  "\x1b[38;2;230;219;116m"    // Yellow
-#define CO  "\x1b[38;2;253;151;31m"     // Orange 
-#define CLO  "\x1b[38;2;230;159;102m"   // Light Orange
-#define CGR "\x1b[38;2;166;242;46m"     // Green 
-#define CBL "\x1b[38;2;102;235;239m"    // Blue
-#define CR  "\x1b[38;2;249;38;114m"     // Red
+#define INFO '[' << CG << "INFO" << CC << "]:"
+#define ERROR '[' << CR << "ERROR" << CC << "]:"
+#define WARNING '[' << CY << "WARNING" << CC << "]:"
 
-// Header for static mnemonic function
+// Header for static functions
 static void printMnemonic(void);
+static unsigned char getHex(char hex);
+
+// Static variables
+static bool foregroundChange = 0;
+static bool backgroundChange = 0;
+
+/**
+ * @brief This function changes a hex character into a value
+ * 
+ * @param hex character
+ * 
+ * @return parsed character value
+ */
+static unsigned char getHex(char hex)
+{
+    if (hex >= '0' && hex <= '9') return hex - '0';
+    if (hex >= 'A' && hex <= 'F') return hex + 10 - 'A';
+    if (hex >= 'a' && hex <= 'f') return hex + 10 - 'a';
+    return 0;
+}
+
 
 /**
  * @brief This function parses the arguments given in the command line
@@ -52,6 +75,71 @@ int parse_arguments(int argc, char** argv) {
         // Check for stepByStep flag
         } else if (arg[0] == '-' && arg[1] == 's' && arg[2] == '\0') {
             stepByStep = 1;
+
+        // Check for cycles per frame flag
+        } else if (arg[0] == '-' && arg[1] == 'c' && arg[2] == '\0') {
+            cyclesPerFrame = 0;
+
+        // Check for hideWarnings flag
+        } else if (arg[0] == '-' && arg[1] == 'w' && arg[2] == '\0') {
+            hideWarnings = 1;
+
+        // Check for flipControls flag
+        } else if (arg[0] == '-' && arg[1] == 'n' && arg[2] == '\0') {
+            flipControls = 1;
+
+        // Check for xterm color scheme flag
+        } else if (arg[0] == '-' && arg[1] == 'x' && arg[2] == '\0') {
+            colorScheme = 1;
+
+        // Check for monochrome color scheme flag
+        } else if (arg[0] == '-' && arg[1] == 'm' && arg[2] == '\0') {
+            colorScheme = 2;
+
+        // Parse the cycles per frame flag
+        } else if (!cyclesPerFrame) {
+            if (arg[0] >= '0' && arg[0] <= '9') {
+                cyclesPerFrame = stoi(arg);
+            } else {
+                std::cout << ERROR << " Missing argument for cycles per frame\n";
+                return -1;
+            }
+
+        // Check for the foreground color
+        } else if (arg[0] == '-' && arg[1] == 'f' && arg[2] == '\0') {
+            foregroundChange = 1;
+            std::cout << "parsing color\n";
+
+        // Parse the foreground color
+        } else if (foregroundChange) {
+            if (arg.size() == 6) {
+                unsigned red   = (getHex(arg[1]) << 4) + getHex(arg[2]);
+                unsigned green = (getHex(arg[3]) << 4) + getHex(arg[4]);
+                unsigned blue  = (getHex(arg[5]) << 4) + getHex(arg[6]);
+                std::cout << "Parsing color" << (int)red << " " << (int)green << " " << (int)blue << '\n';
+                foreground = sf::Color(red, green, blue);
+                foregroundChange = 0;
+            } else {
+                std::cout << ERROR << " Missing or wrong argument for foreground color\n";
+                return -1;
+            }
+
+        // Check for the background color
+        } else if (arg[0] == '-' && arg[1] == 'b' && arg[2] == '\0') {
+            backgroundChange = 1;
+
+        // Parse the background color
+        } else if (backgroundChange) {
+            if (arg.size() == 6) {
+                unsigned red   = (getHex(arg[1]) << 4) + getHex(arg[2]);
+                unsigned green = (getHex(arg[3]) << 4) + getHex(arg[4]);
+                unsigned blue  = (getHex(arg[5]) << 4) + getHex(arg[6]);
+                background = sf::Color(red, green, blue);
+                backgroundChange = 0;
+            } else {
+                std::cout << ERROR << " Missing or wrong argument for foreground color\n";
+                return -1;
+            } // TODO: fix colors
         
         // Check for kill address
         } else if (arg[0] == '-' && arg[1] == 'k' && arg[2] == '\0') {
@@ -62,10 +150,12 @@ int parse_arguments(int argc, char** argv) {
             if (arg[0] >= '0' && arg[0] <= '9') {
                 killAddress = stoi(arg);
             } else {
-                std::cout << "[\x1b[38;2;249;38;114mERROR\x1b[0m]: Missing argument\n";
-                std::cout << "[\x1b[38;2;166;242;46mINFO\x1b[0m]: Usage: chip8 [-v] [-k kill address (dec)] filename\n";
+                std::cout << ERROR << " Missing argument for kill address\n";
                 return -1;
             }
+        } else {
+            std::cout << ERROR << " Unknown argument: " << arg << '\n';
+            return -1;
         }
     }
 
@@ -82,20 +172,20 @@ void log()
     printMnemonic();
 
     // Print out OPCODE and PC and I addresses
-    std::cout << "[\x1b[38;2;166;242;46mINFO\x1b[0m]: OP: " << std::uppercase << std::hex << CR <<
+    std::cout << INFO << " OP: " << std::uppercase << std::hex << CR <<
     interpreter.opcode << "h\x1b[0m PC: " << CBL << interpreter.PC-2 << "h\x1b[0m I: " << CBL << (int)interpreter.I << "h\x1b[0m\n"; 
-    std::cout << "\x1b[0m[\x1b[38;2;166;242;46mINFO\x1b[0m]: DT: " << std::dec << ((interpreter.delayTimer) ? CR : CGR) <<
+    std::cout << INFO << " DT: " << std::dec << ((interpreter.delayTimer) ? CR : CGR) <<
     (int)interpreter.delayTimer << " \x1b[0mST: " << ((interpreter.soundTimer) ? CR : CGR) <<
     (int)interpreter.soundTimer << "\x1b[0m\n";
     
     // Print out the registers
-    std::cout << "\x1b[0m[\x1b[38;2;166;242;46mINFO\x1b[0m]: V: ";
+    std::cout << INFO << " V: ";
     for (unsigned j = 0; j < 4; j++) {
         for (unsigned k = 0; k < 4; k++) {
             std::cout << ((interpreter.V[j*4+k]) ? CO : CY);
             std::cout << std::setw(2) << std::setfill('0') << std::uppercase << std::hex << (int)interpreter.V[j*4+k] << "h "; 
         }
-        std::cout << "\n\x1b[0m[\x1b[38;2;166;242;46mINFO\x1b[0m]:    ";
+        std::cout << CC << '\n' << INFO << "    ";
     }
 
     std::cout << '\n';
@@ -116,8 +206,7 @@ static void printMnemonic(void)
     unsigned short nibble2 = (opcode >> 8) & 0xF;
     
     // Print the log info
-    cout << "[\x1b[38;2;166;242;46mINFO\x1b[0m]: ";
-    cout << "Operation: ";
+    cout << INFO << " Operation: ";
 
     switch (opcode & 0xF000) {
         case 0x0000:
