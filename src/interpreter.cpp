@@ -276,17 +276,19 @@ void Interpreter::drawSprite(void)
 
     for (unsigned y = 0; y < N; y++) {
         for (unsigned x = 0; x < 8; x++) {
-            if ((memoryArray[I + y] >> (7 - x)) & 0x1) {
-                // Save the data to screen data
-                screenData[(Y + y) * 64 + X + x] ^= 1;
-                // If we unset anything set colision flag
-                if (!(screenData[(Y + y) * 64 + X + x])) V[0xF] = 1;
-                // Set the color
-                sf::Color color = (screenData[(Y + y) * 64 + X + x]) ? foreground : background;
-                screenArray[((Y + y) * 64 + X + x) * 4 + 0].color = color;
-                screenArray[((Y + y) * 64 + X + x) * 4 + 1].color = color;
-                screenArray[((Y + y) * 64 + X + x) * 4 + 2].color = color;
-                screenArray[((Y + y) * 64 + X + x) * 4 + 3].color = color;
+            if (X + x < 64 && Y + y < 32) {
+                if ((memoryArray[I + y] >> (7 - x)) & 0x1) {
+                    // Save the data to screen data
+                    screenData[(Y + y) * 64 + X + x] ^= 1;
+                    // If we unset anything set colision flag
+                    if (!(screenData[(Y + y) * 64 + X + x])) V[0xF] = 1;
+                    // Set the color
+                    sf::Color color = (screenData[(Y + y) * 64 + X + x]) ? foreground : background;
+                    screenArray[((Y + y) * 64 + X + x) * 4 + 0].color = color;
+                    screenArray[((Y + y) * 64 + X + x) * 4 + 1].color = color;
+                    screenArray[((Y + y) * 64 + X + x) * 4 + 2].color = color;
+                    screenArray[((Y + y) * 64 + X + x) * 4 + 3].color = color;
+                }
             }
         }
     }
