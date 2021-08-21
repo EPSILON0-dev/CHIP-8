@@ -1,0 +1,6 @@
+# Exclude bin, obj and log folders, and any .o and .log files
+log/
+bin/
+obj/
+*.log
+*.o
