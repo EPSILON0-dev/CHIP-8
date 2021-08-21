@@ -33,6 +33,26 @@ sf::Keyboard::Key keysLUT[] = {
     sf::Keyboard::Key::F, sf::Keyboard::Key::V, sf::Keyboard::Key::C, sf::Keyboard::Key::Z
 };
 
+// Character set
+static const unsigned char characters[80] = {
+    0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+    0x20, 0x60, 0x20, 0x20, 0x70, // 1
+    0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+    0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+    0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+    0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+    0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+    0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+    0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+    0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+    0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+    0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+    0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+    0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+    0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+    0xF0, 0x80, 0xF0, 0x80, 0x80  // F
+};
+
 /**
  * @brief This constructor just clears the VM state
  * 
@@ -68,6 +88,10 @@ void Interpreter::readProgram(char* filename)
     memoryArray[1] = 0xE0;
     memoryArray[2] = 0x12;
     memoryArray[3] = 0x00;
+
+    // Load the character set
+    for (unsigned i = 0; i < 80; i++) 
+        memoryArray[0x1B0 + i] = characters[i];
 }
 
 /**
@@ -172,7 +196,7 @@ void Interpreter::handleMiscOpcode(void)
             break;
 
         case 0x29: // Set I to the location of the sprite
-            // TODO: Add graphics
+            I = 0x1B0 + (V[reg] & 0xF) * 5;
             break;
 
         case 0x33: // Set BCD
@@ -229,20 +253,19 @@ void Interpreter::drawSprite(void)
         Y = 31;
     }
 
-
-    for (unsigned i = 0; i < N; i++) {
-        for (unsigned j = 0; j < 8; j++) {
-            if ((memoryArray[I + N] >> j) & 0x1) {
+    for (unsigned y = 0; y < N; y++) {
+        for (unsigned x = 0; x < 8; x++) {
+            if ((memoryArray[I + y] >> (7 - x)) & 0x1) {
                 // Save the data to screen data
-                screenData[(Y + i) * 64 + X + j] ^= 1;
+                screenData[(Y + y) * 64 + X + x] ^= 1;
                 // If we unset anything set colision flag
-                if (!(screenData[(Y + i) * 64 + X + j])) V[0xF] = 1;
+                if (!(screenData[(Y + y) * 64 + X + x])) V[0xF] = 1;
                 // Set the color
-                sf::Color color = (screenData[(Y + i) * 64 + X + j]) ? sf::Color::White : sf::Color::Black;
-                screenArray[((Y + i) * 64 + X + j) * 4 + 0].color = color;
-                screenArray[((Y + i) * 64 + X + j) * 4 + 1].color = color;
-                screenArray[((Y + i) * 64 + X + j) * 4 + 2].color = color;
-                screenArray[((Y + i) * 64 + X + j) * 4 + 3].color = color;
+                sf::Color color = (screenData[(Y + y) * 64 + X + x]) ? sf::Color::White : sf::Color::Black;
+                screenArray[((Y + y) * 64 + X + x) * 4 + 0].color = color;
+                screenArray[((Y + y) * 64 + X + x) * 4 + 1].color = color;
+                screenArray[((Y + y) * 64 + X + x) * 4 + 2].color = color;
+                screenArray[((Y + y) * 64 + X + x) * 4 + 3].color = color;
             }
         }
     }
@@ -305,6 +328,7 @@ int Interpreter::Update(void)
                 return -1;
             }
             callStack[SP++] = PC;
+            PC = opcode & 0xFFF;
             break;
 
         case 0x3000: // Skip if equal to immediate
@@ -362,17 +386,17 @@ int Interpreter::Update(void)
             break;
 
         case 0xE000: // Keyboard instructions
-            if ((opcode & 0xF0FF) == 0xE09E) // Key equal to register
+            if ((opcode & 0xFF) == 0x9E) { // Key equal to register
                 if (sf::Keyboard::isKeyPressed(keysLUT[V[(opcode >> 8) & 0xF] & 0xF])) {
                     PC += 2;
-                    break;
                 }
-            if ((opcode & 0xF0FF) == 0xE0A1) // Key equal to register
+            } else if ((opcode & 0xFF) == 0xA1) { // Key equal to register
                 if (!(sf::Keyboard::isKeyPressed(keysLUT[V[(opcode >> 8) & 0xF] & 0xF]))) {
                     PC += 2;
-                    break;
                 }
-            cout << WARNING << " Invalid keyboard opcode: " << uppercase << hex << opcode << "h\n";
+            } else {
+                cout << WARNING << " Invalid keyboard opcode: " << uppercase << hex << opcode << "h\n";
+            }
             break;
 
         case 0xF000: // Misc instructions
