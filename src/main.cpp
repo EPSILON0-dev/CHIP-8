@@ -84,6 +84,10 @@ int main(int argc, char** argv)
                 return 0;
                 break;
             
+            case sf::Event::Resized:
+                window.setView(sf::View(sf::Vector2f(320, 160), sf::Vector2f(640, 320)));
+                break;
+
             default:
                 break;
             }
